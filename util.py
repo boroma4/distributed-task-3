@@ -41,5 +41,11 @@ def read_input(path):
                 history = list(map(int,data.split(',')))
 
         return processes, history
-                
- 
+
+def add_process(_processes, name):
+    coord_history = list(filter(lambda p: p.is_coordinator, _processes))[0].history
+    new_proc = process.Process(name, False, coord_history)
+    copy_proc = _processes.copy()
+    copy_proc.append(new_proc)
+    return copy_proc
+
