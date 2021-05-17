@@ -4,12 +4,26 @@ import random
 from process import Process
 from ticker import Ticker
 
-def voting(_processes, new_value):
+def voting(_processes, new_value, rollback_count):
+
+    if (new_value is None and rollback_count is None) or (new_value is not None and rollback_count is not None):
+        print('Incorrect voting, it\'s a bug')
+        return _processes
+
     # Processes without coordinator
     normal_processes = list(filter(lambda p: not p.is_coordinator,_processes.copy()))
     # Coordinator
     coordinator = list(filter(lambda p: p.is_coordinator, _processes.copy()))[0]
-    coordinator.history.append(new_value)
+
+    if new_value:
+        coordinator.history.append(new_value)
+
+    if rollback_count:
+        if len(coordinator.history) - rollback_count <= 0:
+            print('Rollback too long')
+            return _processes
+
+        coordinator.history = coordinator.history[: len(coordinator.history) - rollback_count]
 
     # consider both time and arbitrary failures, or only time???
     if coordinator.is_failed():
@@ -25,7 +39,11 @@ def voting(_processes, new_value):
             continue
 
         # Coordinator sends new value to other processes and it's own history
-        normal_processes[i].history.append(new_value)
+        if new_value:
+            normal_processes[i].history.append(new_value)
+
+        if rollback_count:
+            normal_processes[i].history = normal_processes[i].history[: len(normal_processes[i].history) - rollback_count]
 
         # Basically sending the message back to coordinator for it to perform voting
         if normal_processes[i].history == coordinator.history:
@@ -52,11 +70,11 @@ def voting(_processes, new_value):
 
 
 def set_val(_processes, val):
-    return voting(_processes, val)
+    return voting(_processes, val, None)
 
 
 def rollback(_processes, n):
-    pass
+    return voting(_processes, None, int(n))
 
 
 def add_process(_processes, name):
@@ -87,6 +105,7 @@ def remove_process(_processes, name):
 
     copy_proc.remove(proc_to_remove)
     return copy_proc
+
 
 def time_fail(_processes, name, time):
     if not util.check_name_match(_processes, name):
