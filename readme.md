@@ -2,6 +2,8 @@
 
 Running the program only requires python 3.
 
+**NB!** Recovery was not mentioned in task requirements, so after time failure passes, the node keeps going on with it's old history.
+
 To start run:
 ```
 py main.py 2PC.txt
