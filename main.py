@@ -1,5 +1,6 @@
 import sys
 import util
+import random
 from process import Process
 
 def voting(_processes, new_value):
@@ -44,6 +45,12 @@ def rollback(_processes, n):
 
 def add_process(_processes, name):
     coord_history = list(filter(lambda p: p.is_coordinator, _processes))[0].history
+    matches = list(filter(lambda p: p.name == name, _processes))
+
+    if len(matches) != 0:
+        print('Proc with this name is already in the list')
+        return _processes
+
     new_proc = Process(name, False, coord_history)
     copy_proc = _processes.copy()
     copy_proc.append(new_proc)
@@ -52,7 +59,18 @@ def add_process(_processes, name):
 
 def remove_process(_processes, name):
     copy_proc = _processes.copy()
-    copy_proc.remove(name)
+    matches = list(filter(lambda p: p.name == name, _processes))
+
+    if len(matches) == 0:
+        print('Proc not in list')
+        return _processes
+
+    proc_to_remove = matches[0]
+
+    if proc_to_remove.is_coordinator:
+        random.choice(copy_proc).is_coordinator = True
+
+    copy_proc.remove(proc_to_remove)
     return copy_proc
 
 
@@ -88,6 +106,7 @@ if __name__ == "__main__":
 
         except KeyboardInterrupt:
             print("Please, do not use Ctrl+C. Try again with \'exit\' command")
+        # debug
         except Exception as e:
             print(e)
             print("Please try again")

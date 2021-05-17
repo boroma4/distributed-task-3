@@ -9,7 +9,8 @@ class Process:
         return f'{self.name} {ending}'
     
     def history_print(self):
-        print(f'PName: {self.name}. PHistory: {self.history}')
+        status = ' (Coordinator)' if self.is_coordinator else ''
+        print(f'PName: {self.name}{status}. PHistory: {self.history}')
 
     def __repr__(self):
         return self.__str__()

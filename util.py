@@ -41,5 +41,3 @@ def read_input(path):
                 history = [e.strip() for e in data.split(',')]
 
         return processes, history
-
-
