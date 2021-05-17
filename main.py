@@ -50,18 +50,6 @@ def voting(_processes, new_value, rollback_count):
             else:
                 normal_processes[i].history = normal_processes[i].history[: len(normal_processes[i].history) - rollback_count]
 
-        # Didn't see anything about history condition in slides
-
-        # Basically sending the message back to coordinator for it to perform voting
-        # if normal_processes[i].history == coordinator.history:
-        #     # flip
-        #     msg = 'OK' if not normal_processes[i].is_arbitrary_failed else 'CANCEL'
-        #     messages.append('OK')
-        # else:
-        #     # flip
-        #     msg = 'CANCEL' if not normal_processes[i].is_arbitrary_failed else 'OK'
-        #     messages.append('CANCEL')
-
         # Basically sending the message back to coordinator for it to perform voting
         # flip
         msg = 'OK' if not normal_processes[i].is_arbitrary_failed else 'CANCEL'
@@ -79,7 +67,7 @@ def voting(_processes, new_value, rollback_count):
         # Commit
         return normal_processes
     else:
-        print(f'Value {new_value} will not be added to history. Commit failed')
+        print(f'Commit failed')
         # No commit
         return _processes.copy()
 
@@ -191,7 +179,6 @@ if __name__ == "__main__":
                 print('Unsupported command')
             
             ticker.upd_list(processes)
-            print('\n')
             for p in processes:
                 p.history_print()
 
