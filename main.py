@@ -1,20 +1,21 @@
 import sys
 import util
+from process import Process
 
 def voting(_processes, new_value):
     # Processes without coordinator
-    processes = list(filter(lambda p: not p.is_coordinator,_processes.copy()))
+    normal_processes = list(filter(lambda p: not p.is_coordinator,_processes.copy()))
     # Coordinator
     coordinator = list(filter(lambda p: p.is_coordinator, _processes.copy()))[0]
     coordinator.history.append(new_value)
 
     messages = []
 
-    for i in range(len(processes)):
+    for i in range(len(normal_processes)):
         # Coordinator sends new value to other processes and it's own history
-        processes[i].history.append(new_value)
+        normal_processes[i].history.append(new_value)
         # Basically sending the message back to coordinator for it to perform voting
-        if processes[i].history == coordinator.history:
+        if normal_processes[i].history == coordinator.history:
             messages.append('OK')
         else:
             messages.append('CANCEL')
@@ -23,14 +24,38 @@ def voting(_processes, new_value):
     oks = list(filter(lambda p: p=='OK',messages))
     cancels = list(filter(lambda p: p=='CANCEL',messages))
 
-    if len(cancels) < len(oks):
+    if len(cancels) > len(oks):
         print(f'Value {new_value} will not be added to history. Commit failed')
         # No commit
         return _processes.copy()
     else:
-        processes.append(coordinator)
+        normal_processes.append(coordinator)
         # Commit
-        return processes
+        return normal_processes
+
+
+def set_val(_processes, val):
+    return voting(_processes, val)
+
+
+def rollback(_processes, n):
+    pass
+
+
+def add_process(_processes, name):
+    coord_history = list(filter(lambda p: p.is_coordinator, _processes))[0].history
+    new_proc = Process(name, False, coord_history)
+    copy_proc = _processes.copy()
+    copy_proc.append(new_proc)
+    return copy_proc
+
+
+def remove_process(_processes, name):
+    copy_proc = _processes.copy()
+    copy_proc.remove(name)
+    return copy_proc
+
+
 
 if __name__ == "__main__":
     # Entrypoint
@@ -39,7 +64,7 @@ if __name__ == "__main__":
     print(processes, history)
     # Initializing. Each process stores the value state.
     for i,process in enumerate(processes):
-        processes[i].history = history
+        processes[i].history = history.copy()
     choice = ""
 
     while choice != "exit":
@@ -49,8 +74,12 @@ if __name__ == "__main__":
 
             if args[0] == "exit":
                 print("\nCiao")
+            elif args[0] == "set-val":
+                processes = set_val(processes, args[1])
             elif args[0] == "add":
-                processes = util.add_process(processes, args[1])
+                processes = add_process(processes, args[1])
+            elif args[0] == "remove":
+                processes = remove_process(processes, args[1])
             else:
                 print('Unsupported command')
             
@@ -59,5 +88,6 @@ if __name__ == "__main__":
 
         except KeyboardInterrupt:
             print("Please, do not use Ctrl+C. Try again with \'exit\' command")
-        except:
+        except Exception as e:
+            print(e)
             print("Please try again")
