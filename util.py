@@ -41,3 +41,21 @@ def read_input(path):
                 history = [e.strip() for e in data.split(',')]
 
         return processes, history
+
+
+def check_name_match(_processes, name):
+    matches = list(filter(lambda p: p.name == name, _processes))
+
+    if len(matches) == 0:
+        print('Proc not in list')
+        return False
+    
+    return True
+
+
+def assert_arg_len(args, target):
+    if len(args) != target:
+        print('Wrong number of args')
+        return False
+        
+    return True
