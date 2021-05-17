@@ -16,7 +16,7 @@ class Process:
         status = ' (Coordinator)' if self.is_coordinator else ''
         time_error_info = 'Time failure: ' + 'False' if not self.is_time_failed else f'True, Time left: {self.time_fail_release}s'
         arb_error_info = 'Arbitrary failure: ' + 'False' if not self.is_arbitrary_failed else f'True, Time left: {self.arbitrary_fail_release}s'
-        print(f'PName: {self.name}{status}. PHistory: {self.history}. Status: {time_error_info}, {arb_error_info}')
+        print(f'PName: {self.name}{status}. PHistory: {self.history}. {time_error_info}, {arb_error_info}')
 
     def __repr__(self):
         return self.__str__()
@@ -25,7 +25,7 @@ class Process:
         return self.is_time_failed or self.is_arbitrary_failed
 
     def set_time_failed_for(self, time):
-        if self.is_failed():
+        if self.is_time_failed:
             print('Process already failing')
             return 
 
@@ -33,9 +33,9 @@ class Process:
         self.time_fail_release = time
 
     def set_arbitrary_failed_for(self, time):
-        if self.is_failed():
+        if self.is_time_failed:
             print('Process already failing')
-            return 
+            return  
 
         self.is_arbitrary_failed = True
         self.arbitrary_fail_release = time

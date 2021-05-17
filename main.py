@@ -1,6 +1,7 @@
 import sys
 import util
 import random
+import copy
 from process import Process
 from ticker import Ticker
 
@@ -11,9 +12,9 @@ def voting(_processes, new_value, rollback_count):
         return _processes
 
     # Processes without coordinator
-    normal_processes = list(filter(lambda p: not p.is_coordinator,_processes.copy()))
+    normal_processes = copy.deepcopy(list(filter(lambda p: not p.is_coordinator,_processes.copy())))
     # Coordinator
-    coordinator = list(filter(lambda p: p.is_coordinator, _processes.copy()))[0]
+    coordinator = copy.deepcopy(list(filter(lambda p: p.is_coordinator, _processes.copy()))[0])
 
     if new_value:
         coordinator.history.append(new_value)
@@ -25,8 +26,8 @@ def voting(_processes, new_value, rollback_count):
 
         coordinator.history = coordinator.history[: len(coordinator.history) - rollback_count]
 
-    # consider both time and arbitrary failures, or only time???
-    if coordinator.is_failed():
+    # coordinator time failed
+    if coordinator.is_time_failed:
         print('Coordinator is failed, aborting')
         return _processes
 
@@ -43,30 +44,44 @@ def voting(_processes, new_value, rollback_count):
             normal_processes[i].history.append(new_value)
 
         if rollback_count:
-            normal_processes[i].history = normal_processes[i].history[: len(normal_processes[i].history) - rollback_count]
+            # erase everything if rollback is too long
+            if len(normal_processes[i].history) - rollback_count <= 0:
+                normal_processes[i].history = []
+            else:
+                normal_processes[i].history = normal_processes[i].history[: len(normal_processes[i].history) - rollback_count]
+
+        # Didn't see anything about history condition in slides
 
         # Basically sending the message back to coordinator for it to perform voting
-        if normal_processes[i].history == coordinator.history:
-            # flip
-            msg = 'OK' if not normal_processes[i].is_arbitrary_failed else 'CANCEL'
-            messages.append('OK')
-        else:
-            # flip
-            msg = 'CANCEL' if not normal_processes[i].is_arbitrary_failed else 'OK'
-            messages.append('CANCEL')
+        # if normal_processes[i].history == coordinator.history:
+        #     # flip
+        #     msg = 'OK' if not normal_processes[i].is_arbitrary_failed else 'CANCEL'
+        #     messages.append('OK')
+        # else:
+        #     # flip
+        #     msg = 'CANCEL' if not normal_processes[i].is_arbitrary_failed else 'OK'
+        #     messages.append('CANCEL')
+
+        # Basically sending the message back to coordinator for it to perform voting
+        # flip
+        msg = 'OK' if not normal_processes[i].is_arbitrary_failed else 'CANCEL'
+        messages.append(msg)
     
     # Voting
     oks = list(filter(lambda p: p=='OK',messages))
     cancels = list(filter(lambda p: p=='CANCEL',messages))
+    
+    # if all are VOTE-COMMIT, it sends GLOBAL COMMIT to all participants, otherwise it sends GLOBAL-ABORT
+    # Flip coordinator decision if arbitrary failed
 
-    if len(cancels) > len(oks):
-        print(f'Value {new_value} will not be added to history. Commit failed')
-        # No commit
-        return _processes.copy()
-    else:
+    if (len(cancels) == 0 and not coordinator.is_arbitrary_failed) or (len(cancels) != 0 and coordinator.is_arbitrary_failed):
         normal_processes.append(coordinator)
         # Commit
         return normal_processes
+    else:
+        print(f'Value {new_value} will not be added to history. Commit failed')
+        # No commit
+        return _processes.copy()
 
 
 def set_val(_processes, val):
@@ -154,7 +169,7 @@ if __name__ == "__main__":
                 print("\nCiao")
             elif args[0] == "debug":
                 util.assert_arg_len(args, 1)
-            elif args[0] == "set-val":
+            elif args[0] == "set-value":
                 util.assert_arg_len(args, 2)
                 processes = set_val(processes, args[1])
             elif args[0] == "rollback":
@@ -176,6 +191,7 @@ if __name__ == "__main__":
                 print('Unsupported command')
             
             ticker.upd_list(processes)
+            print('\n')
             for p in processes:
                 p.history_print()
 
@@ -183,7 +199,6 @@ if __name__ == "__main__":
             print("Please, do not use Ctrl+C. Try again with \'exit\' command")
         # debug
         except Exception as e:
-            print(e)
             print("Please try again")
 
     ticker.stop()
